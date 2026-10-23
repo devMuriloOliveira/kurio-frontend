@@ -31,6 +31,10 @@ async function enableMocking() {
 
 async function main() {
   await enableMocking()
+  if (import.meta.env.VITE_ENABLE_MOCKS === 'true') {
+    const { startRealtime } = await import('@/features/realtime/socket-client')
+    startRealtime()
+  }
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

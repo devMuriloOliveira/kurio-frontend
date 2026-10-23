@@ -1,75 +1,41 @@
-# React + TypeScript + Vite
+# KURIO
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Marketplace de NFTs para o desafio Frontend da Jungle Gaming. Esta é uma demonstração local com API simulada pelo MSW. Nenhum pagamento, conexão de carteira ou transferência em blockchain ocorre.
 
-Currently, two official plugins are available:
+## Executar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Requer Node.js e npm. A validação local foi feita com Node.js 22.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+O arquivo `.env` contém `VITE_ENABLE_MOCKS=true`. Mantenha essa variável no build de demonstração. A aplicação aguarda o service worker do MSW antes de renderizar. Dados simulados são mantidos no armazenamento local do navegador.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm run build
+npm run preview
+npx tsc -b
+npm run lint
+npm run test:e2e
 ```
+
+`npm run build` inclui verificação de tipos. Os testes Playwright iniciam seu próprio Vite na porta 5174 e usam o Chrome instalado, em viewports 1440 × 900, 768 × 1024 e 390 × 844. O relatório HTML fica em `playwright-report/` e traces de falhas em `test-results/`. A suíte atual cobre carteiras, compra simulada, isolamento do recibo, detalhe direto e transição do carrinho entre visitante e sessão. A cobertura exigida pelo enunciado ainda não está completa.
+
+## Fluxo demonstrável
+
+1. Crie uma conta com credenciais **fictícias** pelo botão **Entrar → Criar conta**. Não há usuários pré cadastrados nem credenciais reais para a demonstração.
+2. Abra **Perfil → Carteiras** e salve uma carteira na rede do NFT. Para Ethereum ou Polygon, use um endereço fictício `0x` seguido de 40 dígitos hexadecimais.
+3. Abra um NFT com estoque, adicione ao carrinho, escolha a carteira no checkout e clique **Revisar compra**. A cotação vem de `POST /api/quotes`.
+4. Clique **Confirmar compra**. A tela de recibo só abre depois de `POST /api/orders` devolver um pedido confirmado. O recibo é lido de `GET /api/orders/:id` e só aparece para a conta dona do pedido.
+
+Carteiras principal e secundária podem ser cadastradas e editadas; os dados persistem após refresh. O carrinho visitante sobrevive ao refresh e ao login. Logout e troca de conta apagam o carrinho local para evitar que os itens de uma sessão apareçam na seguinte.
+
+## Dados de teste e limitações
+
+O mock é local ao navegador. Para restaurar o catálogo e apagar contas, sessões, carteiras, carrinho e pedidos de teste, limpe os dados do site no navegador e recarregue a página. Os testes E2E criam contextos isolados automaticamente. Esse reset apaga apenas dados simulados daquela origem.
+
+É possível observar respostas 404 acessando `/nfts/identificador-inexistente`, erros de formulário em cadastro/carteiras e conflito de idempotência ao reutilizar uma chave com outra cotação. Cenários determinísticos de timeout, recusa, expiração de sessão, latência variável e mudança em tempo real ainda não estão disponíveis.
+
+O projeto ainda **não atende integralmente ao desafio**: faltam Socket.IO funcional, favoritos e carrinho via REST, filtros e paginação por URL, cenários completos do MSW, testes de regressão visual e auditorias Lighthouse. Veja [AUDIT.md](AUDIT.md) e [ARCHITECTURE.md](ARCHITECTURE.md). Não há URL pública publicada por esta revisão.
