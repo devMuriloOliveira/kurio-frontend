@@ -12,6 +12,8 @@ dist
 dist-ssr
 playwright-report
 test-results
+lighthouse-reports
+.lighthouseci
 *.local
 
 # Editor directories and files

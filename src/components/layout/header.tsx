@@ -1,7 +1,7 @@
 
-import { useSyncExternalStore } from 'react'
-import { Link, useLocation } from '@tanstack/react-router'
-import { Search, ShoppingCart } from 'lucide-react'
+import { useState, useSyncExternalStore, type FormEvent, type MouseEvent } from 'react'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { Search, ShoppingCart, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { AuthHeaderControl } from '@/features/auth/components/auth-header-control'
@@ -10,18 +10,53 @@ import {
   subscribeToCart,
 } from '@/features/cart/cart-storage'
 
-type HeaderProps = {
-  onSearch?: () => void
-  onLogin?: () => void
+function CatalogSearchForm({ id, query, onSearch, className }: { id: string; query: string; onSearch: (term: string) => void; className: string }) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    onSearch(new FormData(event.currentTarget).get('q')?.toString() ?? '')
+  }
+
+  function clear(event: MouseEvent<HTMLButtonElement>) {
+    const input = event.currentTarget.form?.querySelector<HTMLInputElement>('input[name="q"]')
+    if (input) input.value = ''
+    onSearch('')
+  }
+
+  return (
+    <form id={id} key={query} role="search" aria-label="Pesquisa do catálogo" onSubmit={submit} className={`flex min-w-0 items-center gap-1 rounded-lg bg-sidebar px-2 focus-within:ring-2 focus-within:ring-ring ${className}`}>
+      <input name="q" type="search" aria-label="Buscar NFTs ou coleções" defaultValue={query} placeholder="Buscar NFTs ou coleções" className="min-w-0 flex-1 bg-transparent px-1 py-2 text-xs text-foreground outline-none placeholder:text-text-secondary" />
+      <button type="button" onClick={clear} aria-label="Limpar busca" title="Limpar busca" className="flex size-7 shrink-0 items-center justify-center rounded text-text-secondary hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">
+        <X aria-hidden="true" className="size-4" />
+      </button>
+      <Button type="submit" variant="ghost" size="icon" aria-label="Executar busca" title="Buscar no catálogo" className="size-7 shrink-0 text-primary">
+        <Search aria-hidden="true" className="size-4" />
+      </Button>
+    </form>
+  )
 }
 
-export function Header({ onSearch }: HeaderProps) {
+export function Header() {
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const searchStr = useLocation({ select: (location) => location.searchStr })
+  const query = new URLSearchParams(searchStr).get('q') ?? ''
+  const navigate = useNavigate({ from: '/' })
+  const [searchOpen, setSearchOpen] = useState(Boolean(query))
+  const isHomePage = pathname === '/'
   const isMarketPage = useLocation({
     select: (location) =>
       location.pathname.startsWith('/nfts/') ||
       location.pathname === '/carrinho' ||
       location.pathname === '/checkout',
   })
+
+  function commitSearch(term: string) {
+    void navigate({
+      to: '/',
+      search: (previous) => ({ ...previous, q: term.trim() || undefined, page: 1 }),
+      hash: 'catalogo',
+    })
+    setSearchOpen(true)
+  }
 
   const cartCount = useSyncExternalStore(
     subscribeToCart,
@@ -31,8 +66,10 @@ export function Header({ onSearch }: HeaderProps) {
 
   return (
     <header className="bg-background text-foreground">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 lg:hidden">
-        <Link to="/" className="text-xs font-bold tracking-widest focus-visible:outline-2 focus-visible:outline-primary">KURIO</Link>
+      <div className="flex items-center gap-2 px-4 py-3 lg:hidden">
+        <Link to="/" className="shrink-0 text-xs font-bold tracking-widest focus-visible:outline-2 focus-visible:outline-primary">KURIO</Link>
+        {isHomePage && searchOpen && <CatalogSearchForm id="mobile-catalog-search" query={query} onSearch={commitSearch} className="h-10 flex-1" />}
+        {isHomePage && <Button type="button" variant="ghost" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label={searchOpen ? 'Fechar pesquisa' : 'Pesquisar'} aria-expanded={searchOpen} aria-controls="mobile-catalog-search" title="Pesquisar" className="size-9 shrink-0 text-foreground"><Search aria-hidden="true" className="size-5" /></Button>}
         <AuthHeaderControl />
       </div>
       <div className="mx-auto hidden max-w-[1200px] px-6 pt-6 lg:block">
@@ -88,14 +125,17 @@ export function Header({ onSearch }: HeaderProps) {
           </nav>
 
           <div className="flex items-center justify-end gap-2">
+            {isHomePage && searchOpen && <CatalogSearchForm id="desktop-catalog-search" query={query} onSearch={commitSearch} className="h-9 w-[250px]" />}
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              onClick={onSearch}
-              disabled={!onSearch}
-              aria-label="Pesquisar"
-              title={onSearch ? 'Pesquisar' : 'Pesquisa em breve'}
+              onClick={() => isHomePage && setSearchOpen((open) => !open)}
+              disabled={!isHomePage}
+              aria-label={searchOpen && isHomePage ? 'Fechar pesquisa' : 'Pesquisar'}
+              aria-expanded={isHomePage ? searchOpen : undefined}
+              aria-controls={isHomePage ? 'desktop-catalog-search' : undefined}
+              title={isHomePage ? 'Pesquisar' : 'Pesquisa no catálogo inicial'}
               className="text-foreground disabled:opacity-70"
             >
               <Search aria-hidden="true" />

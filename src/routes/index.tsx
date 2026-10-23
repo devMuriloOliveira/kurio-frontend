@@ -43,6 +43,15 @@ function HomePage() {
     queryKey: ['nfts', 'catalog', search],
     queryFn: ({ signal }) => getNfts(signal, search),
   })
+  const { data: fullCatalog } = useQuery({
+    queryKey: ['nfts', 'catalog-price-bounds'],
+    queryFn: ({ signal }) => getNfts(signal),
+  })
+  const prices = fullCatalog?.data.flatMap((nft) => {
+    const price = Number(nft.priceEth)
+    return nft.priceEth && Number.isFinite(price) ? [price] : []
+  }) ?? []
+  const priceBounds = prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : undefined
 
   function changeSearch(patch: Partial<CatalogSearch>) {
     void navigate({ search: (previous) => ({ ...previous, ...patch, page: patch.page ?? 1 }), hash: 'catalogo' })
@@ -50,17 +59,13 @@ function HomePage() {
 
   return (
     <main className="min-h-screen bg-background p-6 pb-28 text-foreground lg:p-8">
-      <MobileCatalogToolbar key={search.q ?? ''} searchValue={search.q} onSearchSubmit={(q) => changeSearch({ q: q.trim() || undefined })} onOpenFilters={() => setFiltersOpen((value) => !value)} />
+      <MobileCatalogToolbar onOpenFilters={() => setFiltersOpen((value) => !value)} />
       <div className="-mt-4 lg:mt-0">
         <HeroBanner />
       </div>
 
       <div id="catalogo" className="mt-8 lg:mt-12">
-        <form key={search.q ?? ''} role="search" aria-label="Busca de NFTs" className="mx-auto mb-5 hidden max-w-[1200px] justify-end gap-2 lg:flex" onSubmit={(event) => { event.preventDefault(); changeSearch({ q: new FormData(event.currentTarget).get('q')?.toString().trim() || undefined }) }}>
-          <input name="q" type="search" aria-label="Buscar NFTs" defaultValue={search.q} placeholder="Buscar NFTs" className="w-64 rounded bg-sidebar px-3 py-2 text-xs text-foreground focus-visible:outline-2 focus-visible:outline-primary" />
-          <button type="submit" className="rounded bg-primary px-3 py-2 text-xs font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Buscar</button>
-        </form>
-        {filtersOpen && <div className="mb-5 lg:hidden"><FilterSidebar facets={data?.facets} search={search} onChange={changeSearch} /></div>}
+        {filtersOpen && <div className="mb-5 lg:hidden"><FilterSidebar facets={data?.facets} priceBounds={priceBounds} search={search} onChange={changeSearch} /></div>}
         {isPending && (
           <p role="status" className="text-yellow-400">
             Carregando NFTs...
@@ -83,7 +88,7 @@ function HomePage() {
           </div>
         )}
 
-        {data && <CatalogSection nfts={data.data} total={data.total} totalPages={data.totalPages} facets={data.facets} search={search} onChange={changeSearch} />}
+        {data && <CatalogSection nfts={data.data} total={data.total} totalPages={data.totalPages} facets={data.facets} priceBounds={priceBounds} search={search} onChange={changeSearch} />}
         {isFetching && !isPending && <p role="status" className="mt-2 text-xs text-text-secondary">Atualizando catálogo...</p>}
       </div>
       <PromotionalBanners />

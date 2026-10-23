@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/perfil", "destination": "/index.html" },
+    { "source": "/carrinho", "destination": "/index.html" },
+    { "source": "/checkout", "destination": "/index.html" },
+    { "source": "/nfts/:nftId", "destination": "/index.html" },
+    { "source": "/pedido/:orderId", "destination": "/index.html" }
+  ]
+}

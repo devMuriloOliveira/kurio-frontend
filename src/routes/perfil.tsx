@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -50,23 +50,31 @@ function ProfilePage() {
   const [secondary, setSecondary] = useState<WalletForm>(emptyWallet)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [sameAsPrimary, setSameAsPrimary] = useState(false)
+  const [profileSource, setProfileSource] = useState<CollectorProfile>()
+  const [walletSource, setWalletSource] = useState<CollectorWallet[]>()
+  const [walletDefaultsToken, setWalletDefaultsToken] = useState<string | null>(null)
 
   const profileQuery = useQuery({ queryKey: ['profile', token], queryFn: fetchProfile, enabled: !!token, retry: false })
   const walletQuery = useQuery({ queryKey: ['wallets', token], queryFn: fetchWallets, enabled: !!token, retry: false })
   const sessionQuery = useQuery({ queryKey: ['auth', 'me', token], queryFn: () => getCurrentUser(token!), enabled: !!token, retry: false })
-  useEffect(() => { if (profileQuery.data) setProfile(profileQuery.data) }, [profileQuery.data])
-  useEffect(() => {
-    if (!walletQuery.data) return
+  if (profileQuery.data && profileQuery.data !== profileSource) {
+    setProfileSource(profileQuery.data)
+    setProfile(profileQuery.data)
+  }
+  if (walletQuery.data && walletQuery.data !== walletSource) {
+    setWalletSource(walletQuery.data)
     const foundPrimary = walletQuery.data.find((w) => w.kind === 'primary')
     const foundSecondary = walletQuery.data.find((w) => w.kind === 'secondary')
     setPrimary(foundPrimary ? walletToForm(foundPrimary) : emptyWallet())
     setSecondary(foundSecondary ? walletToForm(foundSecondary) : emptyWallet())
-    if (foundSecondary) setSecondaryOpen(true)
-  }, [walletQuery.data])
-  useEffect(() => {
-    if (!profileQuery.data || walletQuery.data?.some((w) => w.kind === 'primary')) return
-    setPrimary((prev) => ({ ...prev, email: prev.email || profileQuery.data!.email, profileName: prev.profileName || profileQuery.data!.username }))
-  }, [profileQuery.data, walletQuery.data])
+    setSecondaryOpen(!!foundSecondary)
+  }
+  if (token && profileQuery.data && walletQuery.data && walletDefaultsToken !== token) {
+    setWalletDefaultsToken(token)
+    if (!walletQuery.data.some((w) => w.kind === 'primary')) {
+      setPrimary((prev) => ({ ...prev, email: prev.email || profileQuery.data!.email, profileName: prev.profileName || profileQuery.data!.username }))
+    }
+  }
 
   const updateMutation = useMutation({ mutationFn: updateProfile, onSuccess: async (data) => {
     setProfile(data)

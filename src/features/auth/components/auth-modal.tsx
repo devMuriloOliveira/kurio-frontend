@@ -15,19 +15,6 @@ const inputStyle =
   'h-10 w-full rounded-[4px] border border-[#D28A4C]/20 bg-transparent px-3 text-xs text-[#F5F1EB] placeholder:text-[#CFB28C]/70 outline-none focus:border-[#D28A4C] focus:ring-1 focus:ring-[#D28A4C]'
 
 export function AuthModal({ open, onClose, initialMode = 'login', onLogin, onRegister }: AuthModalProps) {
-  const [mode, setMode] = useState<AuthMode>(initialMode)
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (open) { setMode(initialMode); setError('') }
-  }, [open, initialMode])
-
   useEffect(() => {
     if (!open) return
     function onKeyDown(event: KeyboardEvent) { if (event.key === 'Escape') onClose() }
@@ -36,6 +23,18 @@ export function AuthModal({ open, onClose, initialMode = 'login', onLogin, onReg
   }, [open, onClose])
 
   if (!open) return null
+  return <AuthModalContent key={initialMode} onClose={onClose} initialMode={initialMode} onLogin={onLogin} onRegister={onRegister} />
+}
+
+function AuthModalContent({ onClose, initialMode = 'login', onLogin, onRegister }: Omit<AuthModalProps, 'open'>) {
+  const [mode, setMode] = useState<AuthMode>(initialMode)
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

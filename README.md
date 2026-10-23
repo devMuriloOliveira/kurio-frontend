@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-O arquivo `.env` contém `VITE_ENABLE_MOCKS=true`. Mantenha essa variável no build de demonstração. A aplicação aguarda o service worker do MSW antes de renderizar. Dados simulados são mantidos no armazenamento local do navegador.
+Copie .env.example para .env e mantenha VITE_ENABLE_MOCKS=true no build de demonstração. No deploy, configure essa variável no projeto Vercel para os ambientes Production e Preview; variáveis VITE_* são incorporadas durante o build. O MSW inicia antes da interface e mantém os dados simulados no armazenamento local do navegador.
 
 ```sh
 npm run build
@@ -22,6 +22,12 @@ npm run test:e2e
 ```
 
 `npm run build` inclui verificação de tipos. Os testes Playwright iniciam seu próprio Vite na porta 5174 e usam o Chrome instalado, em viewports 1440 × 900, 768 × 1024 e 390 × 844. O relatório HTML fica em `playwright-report/` e traces de falhas em `test-results/`. A suíte atual cobre carteiras, compra simulada, isolamento do recibo, detalhe direto e transição do carrinho entre visitante e sessão. A cobertura exigida pelo enunciado ainda não está completa.
+
+## Publicação e Lighthouse
+
+A configuração vercel.json encaminha somente as rotas do TanStack Router para index.html; assets, /mockServiceWorker.js e caminhos de API/WebSocket continuam fora dos rewrites. Configure VITE_ENABLE_MOCKS=true no Vercel antes do build para habilitar handlers REST e Socket.IO simulados no navegador. Não há backend privado nem URL pública publicada por esta revisão.
+
+Com Chrome instalado, execute npm run lighthouse para build e três medições de cada página nos perfis mobile e desktop. Para executar um perfil: npm run lighthouse:mobile ou npm run lighthouse:desktop. Relatórios JSON e HTML são gravados em lighthouse-reports/<perfil>/; as medições não são pré-executadas durante o build normal.
 
 ## Fluxo demonstrável
 
@@ -36,6 +42,6 @@ Carteiras principal e secundária podem ser cadastradas e editadas; os dados per
 
 O mock é local ao navegador. Para restaurar o catálogo e apagar contas, sessões, carteiras, carrinho e pedidos de teste, limpe os dados do site no navegador e recarregue a página. Os testes E2E criam contextos isolados automaticamente. Esse reset apaga apenas dados simulados daquela origem.
 
-É possível observar respostas 404 acessando `/nfts/identificador-inexistente`, erros de formulário em cadastro/carteiras e conflito de idempotência ao reutilizar uma chave com outra cotação. Cenários determinísticos de timeout, recusa, expiração de sessão, latência variável e mudança em tempo real ainda não estão disponíveis.
+É possível observar respostas 404 acessando `/nfts/identificador-inexistente`, erros de formulário em cadastro/carteiras e conflito de idempotência ao reutilizar uma chave com outra cotação. O mock também oferece resultados de pedido pendente, confirmado e recusado, recuperação após timeout, falhas controladas de catálogo/favoritos e eventos Socket.IO simulados; os cenários disponíveis estão descritos em `ARCHITECTURE.md`.
 
-O projeto ainda **não atende integralmente ao desafio**: faltam Socket.IO funcional, favoritos e carrinho via REST, filtros e paginação por URL, cenários completos do MSW, testes de regressão visual e auditorias Lighthouse. Veja [AUDIT.md](AUDIT.md) e [ARCHITECTURE.md](ARCHITECTURE.md). Não há URL pública publicada por esta revisão.
+O projeto ainda **não atende integralmente ao desafio**: permanecem lacunas documentadas em carrinho via REST, cenários completos do MSW, testes de regressão visual e cobertura Lighthouse. Socket.IO e favoritos estão implementados. Veja [AUDIT.md](AUDIT.md) e [ARCHITECTURE.md](ARCHITECTURE.md). Não há URL pública publicada por esta revisão.
